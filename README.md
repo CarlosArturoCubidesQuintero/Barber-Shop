@@ -11,12 +11,12 @@
 ## 🔧 Tecnologías usadas:
 
 - Backend: Node.js + Firebase
-- Frontend: (Si usas Flutter, React, etc.)
+- Frontend: (Flutter.)
 
 ## 📄 Instalación:
 
 ```sh
-git clone https://github.com/tu-usuario/barber-shop.git
+git clone https://github.com/CarlosArturoCubidesQuintero/Barber-Shop.git
 cd barber-shop
 npm install
 ```
