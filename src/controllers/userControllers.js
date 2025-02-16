@@ -1,8 +1,9 @@
-//Controlador para registrar usuarios
+// src/controllers/userControllers.js
 
-const registerUser = (req, res) =>{
-    res.json({ message: 'Ruta de resgistro de usuarios funcionando  desde el controlador' });
-};
-
-
-module.exports = { registerUser };
+// Función de ejemplo para registrar un usuario
+const registerUser = (req, res) => {
+    res.json({ message: "Registro de usuario (stub) exitoso" });
+  };
+  
+  module.exports = { registerUser };
+  
