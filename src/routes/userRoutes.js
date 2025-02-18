@@ -1,7 +1,7 @@
 // Importa la función 'Router' del módulo 'express' para crear un enrutador.
 const { Router } = require('express');
 //Importando el controlador
-const { registerUser } = require('../controllers/userControllers')
+const { registerUser } = require('../controllers/authControllers')
 //Importando el cntrolador de loginUser
 const { loginUser } = require('../controllers/loginControllers');
 // Crea una instancia de 'Router', que permitirá definir rutas de la aplicación.

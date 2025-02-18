@@ -8,8 +8,6 @@ const createUser = async ({nombre_usuario, email, contrasena_hash, rol}) =>{
     VALUES($1, $2, $3, $4) RETURNING *`;
     const values = [nombre_usuario, email, contrasena_hash, rol];
 
-    console.log("Ejecutando consulta:", query);
-    console.log("Valores:", values);
 
     try {
       const { rows } = await pool.query(query, values);
