@@ -52,7 +52,7 @@ const loginUser = async (req, res) => {
         console.error("Error en loginUser:", error);
         res.status(500).json({message: "Error interno del sevidor."});
     }
-}
+};
 
 module.exports = {
     loginUser

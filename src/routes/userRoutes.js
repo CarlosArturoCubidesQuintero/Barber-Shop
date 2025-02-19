@@ -7,10 +7,10 @@ const { loginUser } = require('../controllers/loginControllers');
 // Crea una instancia de 'Router', que permitirá definir rutas de la aplicación.
 const router = Router();
 
-//Mi ruta del registro de usuarios
-router.post('/api/users', registerUser);
+//Ruta  registro  usuarios
+router.post('/api/record', registerUser);
 
-//Ruta para el Inicio de Sesion
+//Ruta  Inicio  Sesion
 router.post('/api/login', loginUser);
 
 
