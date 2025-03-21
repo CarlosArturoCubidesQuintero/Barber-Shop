@@ -1,16 +1,16 @@
 # Barber-Shop 💈
 
-🚀 Plataforma para la reserva y alquiler de barberías.
+🚀 Plataforma para la reserva en peluquerias.
 
 ## 📌 Características:
 
 - Reserva de espacios para barberos.
 - Gestión de disponibilidad.
-- Integración con Firebase.
+- Integración con MongoDB.
 
 ## 🔧 Tecnologías usadas:
 
-- Backend: Node.js + Firebase
+- Backend: Node.js + MongoDB
 - Frontend: (Flutter.)
 
 ## 📄 Instalación:

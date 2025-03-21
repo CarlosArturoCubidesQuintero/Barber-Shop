@@ -19,7 +19,7 @@ const app = express();
 // Requiere el módulo 'morgan', que permite registrar en la consola las peticiones HTTP recibidas.
 const morgan = require('morgan');
 
-// Importa la conexión a PostgreSQL (o Firebase si es el caso).
+// Importa la conexión a (MongoDB si es el caso).
 const pool = require('./src/config/firebaseConfig');
 
 // Configura el middleware para analizar las solicitudes entrantes con formato JSON 
@@ -68,7 +68,7 @@ fs.readdirSync(routesPath).forEach((file) => {
 
 
 // 📂 Sirve archivos estáticos desde la carpeta 'public', haciéndolos accesibles a través de la URL del servidor.
-app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'public')));
 
 // Exporta la aplicación para que pueda ser utilizada en otros módulos o archivos.
 module.exports = app;
