@@ -6,11 +6,11 @@
 
 - Reserva de espacios para barberos.
 - Gestión de disponibilidad.
-- Integración con MongoDB.
+- Integración con PostgreSql.
 
 ## 🔧 Tecnologías usadas:
 
-- Backend: Node.js + MongoDB
+- Backend: Node.js + PostgreSql
 - Frontend: (Flutter.)
 
 ## 📄 Instalación:

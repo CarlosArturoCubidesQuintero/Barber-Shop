@@ -4,7 +4,8 @@
   "description": "📌 Barber-Shop es una aplicación que permite a barberos y clientes alquilar espacios en barberías de manera fácil y rápida.",
   "main": "index.js",
   "scripts": {
-    "test": "node server"
+    "test": "node server",
+    "dev": "nodemon server"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +18,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-validator": "^7.2.1",
+    "google-auth-library": "^9.15.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",

@@ -20,7 +20,7 @@ const app = express();
 const morgan = require('morgan');
 
 // Importa la conexión a (MongoDB si es el caso).
-const pool = require('./src/config/firebaseConfig');
+const pool = require('./src/config/postgreSqlConfig');
 
 // Configura el middleware para analizar las solicitudes entrantes con formato JSON 
 // y hacer que los datos del cuerpo estén disponibles en 'req.body'.
@@ -58,7 +58,7 @@ fs.readdirSync(routesPath).forEach((file) => {
     if (file.endsWith('.js')) { // Verifica que el archivo tenga extensión .js.
         try {
             const route = require(path.join(routesPath, file)); // Importa la ruta.
-            app.use(route); // Registra la ruta en Express.
+            app.use('/api',route); // Registra la ruta en Express.
             console.log(`✔ Ruta cargada: ${file}`); // Muestra en consola qué ruta fue cargada.
         } catch (error) {
             console.error(`❌ Error al cargar la ruta ${file}:`, error); // Muestra errores en caso de fallo.
