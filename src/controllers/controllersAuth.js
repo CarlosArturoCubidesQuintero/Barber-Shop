@@ -1,19 +1,18 @@
 const { OAuth2Client } = require("google-auth-library"); // Importa el cliente de autenticación de Google
-const jwt = require("jsonwebtoken"); // Importa JWT para generar tokens
 const User = require("../models/modelsUsers"); // Importa el modelo de usuarios
+const { 
+    generateAccessToken,
+    generateRefreshToken
+} = require("../utils/jwtUtils"); // Importa funciones de utilidad para JWT
+
+const TokenModel = require("../models/modelsToken");
+
 require("dotenv").config(); // Carga variables de entorno
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // Usa la variable de entorno
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);//Configuración del cliente Google 
 
-// ✅ Función para generar el JWT
-const generateToken =(user) => {
-    return jwt.sign(
-        { id: user.id, email: user.email, role: user.role }, // Datos del usuario en el token
-        process.env.JWT_SECRET, // Clave secreta  desde la variable de entorno  
-        {expiresIn: "5m"}//Expiración en horas
-    );
-};
 
+// ✅ Autenticación con Google
 const googleAuth = async (req, res) => {
     try {
         //console.log("Iniciando autenticación con Google...");
@@ -23,7 +22,7 @@ const googleAuth = async (req, res) => {
             return res.status(401).json({ error: "Token no proporcionado" });
         }
 
-        const token = req.body.idToken || (authorization && authorization.split(" ")[1]); // Extrae el token correctamente
+        const token = req.body.idToken || authorization.split(" ")[1]; // Extrae el token de Google
         //console.log("Token recibido:", token);
 
         // ✅ Verificar el token con Google
@@ -34,7 +33,6 @@ const googleAuth = async (req, res) => {
 
         const payload = ticket.getPayload(); // Extrae la información del usuario
         //console.log("Datos recibidos de Google:", payload);
-
         const { email, name = "Ususario" } = payload; // Si name es null, se asigna "Usuario"
 
         // ✅  Buscar si el usuario ya existe en la base de datos
@@ -45,15 +43,29 @@ const googleAuth = async (req, res) => {
             user = await User.createUser(name, email, null, role,  "google");
         }
 
-        // ✅ Generar token JWT
-        const authToken = generateToken(user);
+        // ✅ Generar Access Token y Refresh Token
+        const accessToken  = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+       
+        // ✅ Guardar el Refresh Token en la base de datos
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7); // Expira en 7 días
+        await TokenModel.saveToken(user.id, refreshToken, expiresAt.toISOString());// Guarda el token en la base de datos
+       
+
+        // ✅  Responder con el token y los datos del usuario
+        res.json({
+            message: "Autenticación exitosa",
+            user,
+            accessToken,
+            refreshToken 
+        });
         
-        //✅  Responder con el token y los datos del usuario
-        res.json({message: "Autenticación exitosa", user, token: authToken});
+       
     } catch (error) {
-        //console.error("Error en autenticación con Google:", error);
-        res.status(500).json({ error: "Error al autenticar con Google", details: error.message });
+        res.status(500).json({ error: "Error al autenticar con Google", datails: error.message });
     }
 };
 
-module.exports = { googleAuth };
+module.exports = { googleAuth }; // Exporta el controlador para su uso en otros archivos

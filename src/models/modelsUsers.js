@@ -40,6 +40,16 @@ class User {
       throw error; // Lanza el error para ser manejado externamente
     }
   }
+  // ✅ Nuevo método: Buscar usuario por ID
+  static async findUserById(id){
+    try {
+      const query = "SELECT * FROM users WHERE id = $1"; // Consulta SQL para buscar un usuario por ID
+      const result = await pool.query(query, [id]); // Ejecuta la consulta con el ID proporcionado
+      return result.rows[0] || null; // Retorna el usuario encontrado o undefined si no existe
+    } catch (error) {
+      throw error; // Lanza el error para ser manejado externamente 
+    }
+   }
 }
 
 module.exports = User; // Exporta la clase User para su uso en otros archivos
