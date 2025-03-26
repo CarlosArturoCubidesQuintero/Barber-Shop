@@ -35,12 +35,31 @@ const googleAuth = async (req, res) => {
         //console.log("Datos recibidos de Google:", payload);
         const { email, name = "Ususario" } = payload; // Si name es null, se asigna "Usuario"
 
+        //✅ Verifica si el usuario proporciono un rol antes de registrarlo
+        const role = req.body.role;
+        if (!role){
+            return res.status(400).json({error: "Debe seleccionar un rol antes de continuar"});
+        }
+
+        //✅ Extraer city y locality del cuerpo de la petición
+        let  { city = "", locality = "" } = req.body;
+        
+        //✅ Verifica si el usuario proporciono una ciudad y localidad antes de registrarlo
+        if (role === "barber"){
+            if(!city ||  !locality){
+                return res.status(400).json({error: "Debe proporcionar una ciudad y localidad antes del registro"});
+            }
+        }
+
+      
         // ✅  Buscar si el usuario ya existe en la base de datos
         let user = await User.findByEmail(email);
+        console.log("Usuario encontrado", user);
         if (!user) {
-            //console.log("Usuario no encontrado, creando nuevo...");
+            console.log("Usuario no encontrado, creando nuevo...");
             const role = req.body.role || "client"; // Si no se proporciona un rol, se asigna "client"  
-            user = await User.createUser(name, email, null, role,  "google");
+            user = await User.createUser(name, email, null, role,  "google", city, locality);
+            console.log("Usuarios Creado: ", user);
         }
 
         // ✅ Generar Access Token y Refresh Token

@@ -1,55 +1,78 @@
-const pool = require("../config/postgreSqlConfig"); // Importa la configuración de la base de datos PostgreSQL
-const bcrypt = require("bcrypt"); // Importa bcrypt para encriptar contraseñas
+const pool = require("../config/postgreSqlConfig");
+const bcrypt = require("bcrypt");
 
 class User {
-  // Método para crear un nuevo usuario en la base de datos
-  static async createUser(name, email, password = null, role = "client", provider = "local") {
+  
+  // ✅ Método para buscar usuario por ID (AGREGADO)
+  static async findUserById(userId) {
     try {
-      let hashedPassword = null;
+      const result = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      throw error;
+    }
+  }
 
-      // Si se proporciona una contraseña, se encripta antes de almacenarla
-      if (password) {
-        hashedPassword = await bcrypt.hash(password, 10); // Encripta la contraseña con un factor de costo de 10
+  // ✅ Método para buscar o crear una ubicación (ciudad/localidad)
+  static async findOrCreateLocation(city, locality) {
+    try {
+      const locationQuery = "SELECT id FROM locations WHERE city = $1 AND locality = $2";
+      const locationResult = await pool.query(locationQuery, [city, locality]);
+
+      if (locationResult.rows.length > 0) {
+        return locationResult.rows[0].id; // Retorna el ID si ya existe
       }
 
-      // Query SQL para insertar un nuevo usuario en la base de datos
-      const query = `
-        INSERT INTO users (name, email, password, role, provider)
-        VALUES ($1, $2, $3, $4, $5) 
-        RETURNING id, name, email, role, provider, created_at; 
-      `;
-      // RETURNING Devuelve los datos del usuario insertado
-
-      // Valores a insertar en la consulta
-      const values = [name, email, hashedPassword, role, provider];
-      const result = await pool.query(query, values); // Ejecuta la consulta SQL
-
-      return result.rows[0]; // Retorna el usuario creado
+      // Si no existe, insertarlo y devolver el ID
+      const insertQuery = "INSERT INTO locations (city, locality) VALUES ($1, $2) RETURNING id";
+      const insertResult = await pool.query(insertQuery, [city, locality]);
+      return insertResult.rows[0].id;
     } catch (error) {
-      throw error; // Lanza el error para ser manejado externamente
+      throw error;
     }
   }
 
-  // Método para buscar un usuario por su correo electrónico
+  // ✅ Método para crear un nuevo usuario
+  static async createUser(name, email, password = null, role = "client", provider = "local", city = null, locality = null) {
+    try {
+      let hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+      let locationId = null;
+
+      // Si el usuario es un "barber", asegurarse de obtener o crear la ubicación
+      if (role === "barber" && city && locality) {
+        locationId = await User.findOrCreateLocation(city, locality);
+      }
+
+      // ✅ Insertar usuario y retornar datos
+      const userQuery = `
+        INSERT INTO users (name, email, password, role, provider)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, name, email, role, provider, created_at;
+      `;
+
+      const userResult = await pool.query(userQuery, [name, email, hashedPassword, role, provider]);
+      const newUser = userResult.rows[0];
+
+      // ✅ Si el usuario es barber, asociarlo con la ubicación
+      if (role === "barber" && locationId) {
+        await pool.query("INSERT INTO barbers (user_id, location_id) VALUES ($1, $2);", [newUser.id, locationId]);
+      }
+
+      return newUser;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // ✅ Buscar usuario por email
   static async findByEmail(email) {
     try {
-      const query = "SELECT * FROM users WHERE email = $1"; // Consulta SQL para buscar un usuario por email
-      const result = await pool.query(query, [email]); // Ejecuta la consulta con el email proporcionado
-      return result.rows[0]; // Retorna el usuario encontrado o undefined si no existe
+      const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      return result.rows[0] || null;
     } catch (error) {
-      throw error; // Lanza el error para ser manejado externamente
+      throw error;
     }
   }
-  // ✅ Nuevo método: Buscar usuario por ID
-  static async findUserById(id){
-    try {
-      const query = "SELECT * FROM users WHERE id = $1"; // Consulta SQL para buscar un usuario por ID
-      const result = await pool.query(query, [id]); // Ejecuta la consulta con el ID proporcionado
-      return result.rows[0] || null; // Retorna el usuario encontrado o undefined si no existe
-    } catch (error) {
-      throw error; // Lanza el error para ser manejado externamente 
-    }
-   }
 }
 
-module.exports = User; // Exporta la clase User para su uso en otros archivos
+module.exports = User;
