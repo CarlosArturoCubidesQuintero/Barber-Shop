@@ -26,7 +26,7 @@ const refreshToken = async (req, res) => {
         try {
             decoded = verifyRefreshToken(refreshToken);
         } catch (error) {
-            return res.status(401).json({ error: "Refresh Token Inválido o Expirado" });
+            return res.status(401).json({ error: "Refresh Token Expirado. Debe iniciar sesión nuevamente" });
         }
 
         // ✅ Buscar al usuario en la base de datos

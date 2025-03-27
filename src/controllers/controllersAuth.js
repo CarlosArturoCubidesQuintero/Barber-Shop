@@ -33,7 +33,11 @@ const googleAuth = async (req, res) => {
 
         const payload = ticket.getPayload(); // Extrae la información del usuario
         //console.log("Datos recibidos de Google:", payload);
-        const { email, name = "Ususario" } = payload; // Si name es null, se asigna "Usuario"
+        const  { email } = payload; // Extrae el email del usuario
+        let name = payload.name;
+        if(!name){
+            name = email.split("@")[0]; // Si no hay nombre, usa el email
+        }
 
         //✅ Verifica si el usuario proporciono un rol antes de registrarlo
         const role = req.body.role;
@@ -54,12 +58,12 @@ const googleAuth = async (req, res) => {
       
         // ✅  Buscar si el usuario ya existe en la base de datos
         let user = await User.findByEmail(email);
-        console.log("Usuario encontrado", user);
+        //console.log("Usuario encontrado", user);
         if (!user) {
-            console.log("Usuario no encontrado, creando nuevo...");
+            //console.log("Usuario no encontrado, creando nuevo...");
             const role = req.body.role || "client"; // Si no se proporciona un rol, se asigna "client"  
             user = await User.createUser(name, email, null, role,  "google", city, locality);
-            console.log("Usuarios Creado: ", user);
+            //console.log("Usuarios Creado: ", user);
         }
 
         // ✅ Generar Access Token y Refresh Token

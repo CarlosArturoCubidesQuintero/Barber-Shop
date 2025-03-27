@@ -5,7 +5,7 @@ const  generateAccessToken = (user) => {// ✅ Función para generar el Access T
     return jwt.sign(
         {id: user.id, email: user.email, role: user.role}, // Datos del usuario en el token
         process.env.JWT_SECRET, // Clave secreta desde la variable de entorno
-        {expiresIn: "5m"}  // 🔥 Access Token expira en 15 min
+        {expiresIn: "1m"}  // 🔥 Access Token expira en 15 min
     );
 
 };
@@ -15,7 +15,7 @@ const generateRefreshToken = (user) => {// ✅ Función para generar el Refresh 
     return jwt.sign(
         {id: user.id}, // Datos del usuario en el token
         process.env.REFRESH_SECRET, // Clave secreta desde la variable de entorno
-        { expiresIn: "10m" } // 🔥 Refresh Token expira en 7 días
+        { expiresIn: "5m" } // 🔥 Refresh Token expira en 7 días
     );
 };
 

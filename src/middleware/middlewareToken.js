@@ -28,7 +28,7 @@ const authMiddleware = (req, res, next) => {
         next(); 
     } catch (error) {
         // Si el token es inválido o expirado, enviamos una respuesta de error con código 401 (No autorizado)
-        return res.status(401).json({ error: "Token inválido", details: error.message });
+        return res.status(401).json({ error: "Token inválido o expirado. Inicie Sesión nuevamente", details: error.message });
     }
 };
 
