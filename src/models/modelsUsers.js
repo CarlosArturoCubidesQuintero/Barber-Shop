@@ -1,5 +1,5 @@
 const pool = require("../config/postgreSqlConfig");
-const bcrypt = require("bcrypt");
+
 
 class User {
   
@@ -33,11 +33,9 @@ class User {
   }
 
   // ✅ Método para crear un nuevo usuario
-  static async createUser(name, email, password = null, role = "client", provider = "local", city = null, locality = null) {
+  static async createUser(name, email,  role = "client", provider = "google", city = null, locality = null) {
     try {
-      let hashedPassword = password ? await bcrypt.hash(password, 10) : null;
-      let locationId = null;
-
+      let locationId = null; // ✅ Declarar locationId antes de usarlo
       // Si el usuario es un "barber", asegurarse de obtener o crear la ubicación
       if (role === "barber" && city && locality) {
         locationId = await User.findOrCreateLocation(city, locality);
@@ -45,12 +43,12 @@ class User {
 
       // ✅ Insertar usuario y retornar datos
       const userQuery = `
-        INSERT INTO users (name, email, password, role, provider)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO users (name, email, role, provider)
+        VALUES ($1, $2, $3, $4)
         RETURNING id, name, email, role, provider, created_at;
       `;
 
-      const userResult = await pool.query(userQuery, [name, email, hashedPassword, role, provider]);
+      const userResult = await pool.query(userQuery, [name, email, role, provider]);
       const newUser = userResult.rows[0];
 
       // ✅ Si el usuario es barber, asociarlo con la ubicación

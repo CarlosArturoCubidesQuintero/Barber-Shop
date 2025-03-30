@@ -1,10 +1,5 @@
 const User  = require("../models/modelsUsers"); // Importa el modelo de usuarios
-const { 
-    generateAccessToken,
-    generateRefreshToken,
-    verifyRefreshToken,
-} = require("../utils/jwtUtils"); // Importa funciones de utilidad para JWT
-
+const { generateAccessToken,generateRefreshToken,verifyRefreshToken} = require("../utils/jwtUtils"); // Importa funciones de utilidad para JWT
 const TokenModel = require("../models/modelsToken");
 
 // ✅ Endpoint para renovar Access Token usando Refresh Token

@@ -34,7 +34,14 @@ const TokenModel =  {
         const values = [newToken, expiresAt, userId];// Valores a actualizar
         const result = await pool.query(query, values);// Ejecuta la consulta
         return result.rows[0];// Retorna el resultado
-    }
+    },
+
+    async findTokenByUserId(userId) {
+        const query = `SELECT * FROM refresh_tokens WHERE user_id = $1;`;
+        const result = await pool.query(query, [userId]);
+        return result.rows[0] || null;
+    },
+    
 
 };
 
