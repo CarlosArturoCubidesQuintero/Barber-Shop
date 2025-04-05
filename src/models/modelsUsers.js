@@ -1,47 +1,51 @@
 const pool = require("../config/postgreSqlConfig");
 
-
 class User {
   
-  // ✅ Método para buscar usuario por ID (AGREGADO)
-  static async findUserById(userId) {
+  // ✅ Método para buscar usuario por ID
+  static async findUserById(id) {
     try {
-      const result = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
-      return result.rows[0] || null;
+      const result = await pool.query("SELECT id, name, email, role, created_at FROM users WHERE id = $1", [id]);
+      return result.rows[0];
     } catch (error) {
+      console.error("Error en findUserById:", error);
       throw error;
     }
   }
 
-  // ✅ Método para buscar o crear una ubicación (ciudad/localidad)
-  static async findOrCreateLocation(city, locality) {
+  // ✅ Actualizar usuarios por ID
+  static async updateUserById(id, name, email, role) {
     try {
-      const locationQuery = "SELECT id FROM locations WHERE city = $1 AND locality = $2";
-      const locationResult = await pool.query(locationQuery, [city, locality]);
-
-      if (locationResult.rows.length > 0) {
-        return locationResult.rows[0].id; // Retorna el ID si ya existe
-      }
-
-      // Si no existe, insertarlo y devolver el ID
-      const insertQuery = "INSERT INTO locations (city, locality) VALUES ($1, $2) RETURNING id";
-      const insertResult = await pool.query(insertQuery, [city, locality]);
-      return insertResult.rows[0].id;
+      const result = await pool.query(
+        "UPDATE users SET name = $1, email = $2, role = $3 WHERE id = $4 RETURNING id, name, email, role",
+        [name, email, role, id]
+      );
+      return result.rows[0];
     } catch (error) {
+      console.error("Error en updateUserById:", error);
+      throw error;
+    }
+  }
+
+  // ✅ Eliminar usuarios por ID
+  static async deleteUserById(id) {
+    try {
+      const result = await pool.query("DELETE FROM users WHERE id = $1 RETURNING id", [id]);
+      return result.rows[0]; // Devuelve True si se eliminó el usuario
+    } catch (error) {
+      console.error("Error en deleteUserById:", error);
       throw error;
     }
   }
 
   // ✅ Método para crear un nuevo usuario
-  static async createUser(name, email,  role = "client", provider = "google", city = null, locality = null) {
+  static async createUser(name, email, role = "client", provider = "google", city = null, locality = null) {
     try {
-      let locationId = null; // ✅ Declarar locationId antes de usarlo
-      // Si el usuario es un "barber", asegurarse de obtener o crear la ubicación
+      let locationId = null;
       if (role === "barber" && city && locality) {
         locationId = await User.findOrCreateLocation(city, locality);
       }
 
-      // ✅ Insertar usuario y retornar datos
       const userQuery = `
         INSERT INTO users (name, email, role, provider)
         VALUES ($1, $2, $3, $4)
@@ -51,13 +55,13 @@ class User {
       const userResult = await pool.query(userQuery, [name, email, role, provider]);
       const newUser = userResult.rows[0];
 
-      // ✅ Si el usuario es barber, asociarlo con la ubicación
       if (role === "barber" && locationId) {
         await pool.query("INSERT INTO barbers (user_id, location_id) VALUES ($1, $2);", [newUser.id, locationId]);
       }
 
       return newUser;
     } catch (error) {
+      console.error("Error en createUser:", error);
       throw error;
     }
   }
@@ -68,6 +72,7 @@ class User {
       const result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
       return result.rows[0] || null;
     } catch (error) {
+      console.error("Error en findByEmail:", error);
       throw error;
     }
   }

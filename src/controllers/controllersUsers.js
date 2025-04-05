@@ -1,14 +1,14 @@
 // Importa el modelo de usuarios desde la carpeta de modelos
-const crudUsers = require("../models/modelsCrudUser");
+const crudUsers = require("../models/modelsUsers");
 
 // Obtener un usuario por su ID
-const getUserId = async (req, res) => {
+const findUserById = async (req, res) => {
     try {
         // Extrae el ID del usuario de los parámetros de la solicitud
         const { id } = req.params;
 
         // Llama al método del modelo para obtener el usuario por su ID
-        const user = await crudUsers.getUserById(id);
+        const user = await crudUsers.findUserById(id);
 
         // Si no se encuentra el usuario, responde con un estado 404 y un mensaje de error
         if (!user) {
@@ -24,21 +24,22 @@ const getUserId = async (req, res) => {
 };
 
 // Actualizar el perfil de un usuario por su ID
-const updateUser = async (req, res) => {
+const updateUserById = async (req, res) => {
     try {
         // Extrae el ID del usuario de los parámetros de la solicitud
         const { id } = req.params;
+        // Extrae los datos del cuerpo de la solicitud (nombre y correo electrónico y  role)
+        const { name, email, role } = req.body;
 
-        // Extrae los datos del cuerpo de la solicitud (nombre y correo electrónico)
-        const { name, email } = req.body;
-
-        // Llama al método del modelo para actualizar el usuario por su ID
-        const updateUser = await crudUsers.updateUserById(id, name, email);
-
-        // Si el usuario no se encuentra, responde con un estado 404 y un mensaje de error
-        if (!updateUser) {
-            return res.status(404).json({ message: "Usuario no encontrado" });
+        //Obtener el usuario actual para conocer su rol si no se envía
+        const  user = await crudUsers.findUserById(id);
+        if(!user){
+            return res.status(404).json({message: "Usuario no encontrado"})
         }
+
+          // Si role no se envía en la solicitud, mantener el mismo rol que ya tenía el usuario
+        const updateUser = await crudUsers.updateUserById(id, name, email, role ?? user.role);
+
 
         // Si la actualización fue exitosa, responde con los datos actualizados del usuario
         res.json(updateUser);
@@ -49,7 +50,7 @@ const updateUser = async (req, res) => {
 };
 
 // Eliminar un usuario por su ID
-const deleteUser = async (req, res) => {
+const deleteUserById = async (req, res) => {
     try {
         console.log("ID recibido:", req.params.id); 
         // Extrae el ID del usuario de los parámetros de la solicitud
@@ -79,7 +80,7 @@ const deleteUser = async (req, res) => {
 
 // Exporta las funciones para poder utilizarlas en otras partes de la aplicación
 module.exports = {
-    getUserId,
-    updateUser,
-    deleteUser
+    findUserById,
+    updateUserById,
+    deleteUserById
 };
