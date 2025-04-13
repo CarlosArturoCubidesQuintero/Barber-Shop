@@ -58,7 +58,7 @@ fs.readdirSync(routesPath).forEach((file) => {
     if (file.endsWith('.js')) { // Verifica que el archivo tenga extensión .js.
         try {
             const route = require(path.join(routesPath, file)); // Importa la ruta.
-            app.use('/api',route); // Registra la ruta en Express.
+            app.use('/api',route); // Usa la ruta importada con el prefijo '/api'.
             console.log(`✔ Ruta cargada: ${file}`); // Muestra en consola qué ruta fue cargada.
         } catch (error) {
             console.error(`❌ Error al cargar la ruta ${file}:`, error); // Muestra errores en caso de fallo.

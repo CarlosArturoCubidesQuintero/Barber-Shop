@@ -10,11 +10,39 @@ const BarberShopModels = {
      * @param {string} locality - Localidad donde se encuentra la barbería.
      * @param {number} user_id - ID del usuario (barbero) que se asociará a esta barbería.
      * @returns {Promise<object>} - Retorna un objeto con los datos de la barbería creada.
+
+     * Verifica si el usuario tiene el rol adecuado.
+     * @param {number} user_id - ID del usuario
+     * @returns {boolean} - true si el usuario tiene el rol adecuado, false en caso contrario
+     */
+    async hasProperRole(user_id) {
+        const query = `SELECT role FROM users WHERE id = $1;`;// Consulta para obtener el rol del usuario
+        const result = await pool.query(query, [user_id]);// Ejecutar la consulta
+        
+        
+        // Si el rol es "barber", devolvemos true; si no, devolvemos false
+         return result.rows.length > 0 ? result.rows[0].role : null;
+    },
+
+
+    /**
+     * Verifica si el usuario ya tiene una barbería registrada.
+     * @param {number} user_id - ID del usuario
+     * @returns {boolean} - true si ya tiene una barbería registrada, false en caso contrario
+     */
+    async hasBarberShop(user_id) {
+        const query = `SELECT 1 FROM barbers WHERE user_id = $1 LIMIT 1;`;// Consulta para verificar si el usuario ya tiene una barbería registrada
+        const result = await pool.query(query, [user_id]);// Ejecutar la consulta
+        return result.rows.length > 0;// Si hay filas, significa que el usuario ya tiene una barbería registrada
+    },
+
+
+    /**
+     * Crea una nueva barbería y la asocia a un usuario en la base de datos.
      */
     async createBarberShop(name, direccion, photo_url, city, locality, user_id) {
-        const client = await pool.connect();
+        const client = await pool.connect();// Obtener un cliente de la conexión a la base de datos
         try {
-            await client.query("BEGIN"); // Inicia la transacción
 
             // 1️⃣ Verificar si la ciudad y localidad ya existen en la tabla locations
             let query = `SELECT id FROM locations WHERE city = $1 AND locality = $2`;
@@ -46,6 +74,9 @@ const BarberShopModels = {
             client.release(); // Liberamos la conexión
         }
     },
+
+
+     
 
     /**
      * Obtiene todas las barberías con su información de ubicación.
