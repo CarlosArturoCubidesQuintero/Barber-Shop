@@ -1,196 +1,147 @@
-const pool = require("../config/postgreSqlConfig");//Importamos la configuración de la base de datos
+const pool = require("../config/postgreSqlConfig"); // Importa la configuración de conexión a la base de datos PostgreSQL
 
-/**
- * Crea una especialidad, la asigna a un barbero con precio y agrega una foto en una sola operación.
- * @param {number} barber_id - ID del barbero
- * @param {string} specialty_name - Nombre de la especialidad
- * @param {number} price - Precio de la especialidad
- * @param {string} photo_url - URL de la foto del peluqueado
- * @returns {Promise<object>} - Retorna la especialidad creada con su asignación y foto
- */
+// ==========================
+// Crear especialidad + asignarla al barbero + guardar la foto
+// ==========================
 const createAndAssignSpecialty = async (barber_id, specialty_name, price, photo_url) => {
-    const client = await pool.connect(); // Conexión a la base de datos
+    const client = await pool.connect(); // Obtiene una conexión de la base de datos
     try {
         await client.query('BEGIN'); // Inicia una transacción
 
-        //Insertar la especialidad si no existe
-        let specialtyResult = await client.query(
-            `INSERT INTO specialties (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING *`,
-            [specialty_name]
-        );
+        // 1. Insertar la especialidad (si no existe) en la tabla specialties
+        const specialtyInsert = `
+            INSERT INTO specialties (name)
+            VALUES ($1)
+            ON CONFLICT (name) DO NOTHING
+            RETURNING *`; // Si ya existe, ignora el conflicto y no inserta de nuevo
+        let specialtyResult = await client.query(specialtyInsert, [specialty_name]);
 
-        let specialty;
-        if(specialtyResult.rows.length > 0) {
-            specialty = specialtyResult.rows[0]; // Especialidad creada
-        }else{
-            specialty = await client.query(`SELECT * FROM  specialties WHERE name = $1`, [specialty_name]);
-            specialty = specialty.rows[0]; // Especialidad existente
+        let specialty = specialtyResult.rows[0];
+
+        // Si la especialidad ya existía y no se insertó, buscarla manualmente
+        if (!specialty) {
+            const existing = await client.query(`SELECT * FROM specialties WHERE name = $1`, [specialty_name]);
+            specialty = existing.rows[0];
         }
 
+        // 2. Insertar la relación entre barbero y especialidad con el precio
+        const barberSpecialtyInsert = `
+            INSERT INTO barber_specialties (barber_id, specialty_id, price)
+            VALUES ($1, $2, $3)
+            RETURNING *`;
+        const barberSpecialty = (await client.query(barberSpecialtyInsert, [barber_id, specialty.id, price])).rows[0];
 
-        // Asignar la especialidad al barbero
-        const barberSpecialtyResult = await client.query(
-            `INSERT INTO barber_specialties (barber_id, specialty_id, price) VALUES ($1, $2, $3) RETURNING *`,
-            [barber_id, specialty.id, price]
-        );
-        const barberSpecialty = barberSpecialtyResult.rows[0]; // Foto creada
+        // 3. Guardar la URL de la foto de la especialidad asignada al barbero
+        const photoInsert = `
+            INSERT INTO barber_specialty_photos (barber_specialty_id, photo_url)
+            VALUES ($1, $2)
+            RETURNING *`;
+        const photo = (await client.query(photoInsert, [barberSpecialty.id, photo_url])).rows[0];
 
-        //Insertar la foto de la especialidad del barbero
-        const  photoResult = await client.query(
-            `INSERT INTO barber_specialty_photos (barber_specialty_id, photo_url) VALUES ($1, $2) RETURNING *`,
-            [barberSpecialty.id, photo_url]
-        );
-        const photo = photoResult.rows[0]; // Foto creada
-
-        await client.query('COMMIT'); // Confirma la transacción
-        return{
-            specialty,
-            barberSpecialty,
-            photo
-        };
+        await client.query('COMMIT'); // Confirmar la transacción
+        return { specialty, barberSpecialty, photo }; // Retornar la información creada
     } catch (error) {
-        await client.query('ROLLBACK'); // Cancela la transacción
-        throw error; // Lanza el error para manejarlo en otro lugar
-    }finally{
-        client.release(); // Libera el cliente de la conexión
+        await client.query('ROLLBACK'); // Revertir los cambios si hubo error
+        throw error;
+    } finally {
+        client.release(); // Liberar la conexión
     }
 };
 
-
-/**
- * Obtiene las especialidades de un barbero con precio y fotos
- * @param {number} barber_id - ID del barbero
- * @returns {Promise<Array>} - Lista de especialidades con detalles
- */
-const getBarberSpecialties = async (id) => {
+// ==========================
+// Obtener especialidades con precio y foto por barbero
+// ==========================
+const getBarberSpecialties = async (barber_id) => {
     try {
-        const barberId = parseInt(id, 10); // 🛠 Convierte a número entero
-      
-
-        const result = await pool.query(
-            `SELECT s.name AS specialty, bs.price, bp.photo_url
+        const query = `
+            SELECT s.name AS specialty, bs.price, bp.photo_url
             FROM barber_specialties bs
             INNER JOIN specialties s ON bs.specialty_id = s.id
             LEFT JOIN barber_specialty_photos bp ON bs.id = bp.barber_specialty_id
-            WHERE bs.barber_id = $1`,
-            [barberId]
-        );
-        
-        return result.rows;
+            WHERE bs.barber_id = $1`; // Relaciona barbero con sus especialidades y fotos
+        const result = await pool.query(query, [parseInt(barber_id, 10)]);
+        return result.rows; // Devuelve un arreglo de especialidades con precio y foto
     } catch (error) {
         console.error("Error en la consulta:", error);
         throw error;
     }
 };
 
-
-
-
-/**
- * Editar una especialidad por su ID
- * @param {number} id - ID de la especialidad a editar
- * @param {string} name - Nuevo nombre de la especialidad 
- * @param {number} price - Nuevo precio de la especialidad
- * @param {string} photo_url - Nueva URL de la foto de la especialidad
- * @returns {Promise<object>} - Retorna la especialidad editada
- */
-const updateSpecialty = async (id, name, price, photo_url) => {//  función de flecha asíncrona
-    const client = await pool.connect(); // Inicia la conexión con la base de datos
-
+// ==========================
+// Actualizar especialidad (nombre, precio, foto)
+// ==========================
+const updateSpecialty = async (id, name, price, photo_url) => {
+    const client = await pool.connect();
     try {
-        await client.query("BEGIN"); // Inicia una transacción
+        await client.query("BEGIN"); // Inicia la transacción
 
-        let updatedSpecialty = null; // Variable para almacenar la especialidad actualizada
-
-        // 1️⃣ Actualizar el nombre en specialties si se proporciona
+        // Si se envió un nuevo nombre, actualízalo
         if (name) {
-            const specialtyQuery = `
-                UPDATE specialties SET name = $1 WHERE id = $2 RETURNING *`;
-            const specialtyResult = await client.query(specialtyQuery, [name, id,]);// Actualiza el nombre de la especialidad
-            updatedSpecialty = specialtyResult.rows[0]; // Guarda la especialidad actualizada
+            await client.query(`UPDATE specialties SET name = $1 WHERE id = $2`, [name, id]);
         }
 
-        // 2️⃣ Actualizar el precio en barber_specialties si se proporciona
+        // Si se envió un nuevo precio, actualiza en la relación con el barbero
         if (price) {
-            const priceQuery = `
-                UPDATE barber_specialties SET price = $1 WHERE specialty_id = $2 RETURNING *`;
-            await client.query(priceQuery, [price, id]);// Actualiza el precio de la especialidad
+            await client.query(`UPDATE barber_specialties SET price = $1 WHERE specialty_id = $2`, [price, id]);
         }
 
-        // 3️⃣ Actualizar la foto en barber_specialty_photos si se proporciona
+        // Si se envió una nueva URL de foto, actualiza la imagen
         if (photo_url) {
-            const photoQuery = `
-                UPDATE barber_specialty_photos SET photo_url = $1 
-                WHERE barber_specialty_id = (SELECT id FROM barber_specialties WHERE specialty_id = $2) 
-                RETURNING *`;
-            await client.query(photoQuery, [photo_url, id]);
+            await client.query(`
+                UPDATE barber_specialty_photos 
+                SET photo_url = $1 
+                WHERE barber_specialty_id = (
+                    SELECT id FROM barber_specialties WHERE specialty_id = $2
+                )`, [photo_url, id]);
         }
 
-        await client.query("COMMIT"); // Confirma la transacción
-
-        return updatedSpecialty; // Devuelve la especialidad editada
+        await client.query("COMMIT"); // Confirmar cambios
+        return { id, name, price, photo_url }; // Retornar los valores actualizados
     } catch (error) {
-        await client.query("ROLLBACK"); // Revierte la transacción en caso de error
+        await client.query("ROLLBACK"); // Revertir si algo falla
         throw error;
     } finally {
-        client.release(); // Libera la conexión con la base de datos
+        client.release(); // Liberar conexión
     }
 };
 
-
-
-
-/**
- * Elimina una especialidad por su ID
- * @param {number} id - ID de la especialidad a eliminar
- * @returns {Promise<boolean>} - Retorna true si se eliminó correctamente, false si no se encontró
- */
+// ==========================
+// Eliminar especialidad (incluyendo relación con barbero y foto)
+// ==========================
 const deleteSpecialty = async (id) => {
-    const client = await pool.connect();// Inicia la conexión con la base de datos
-
+    const client = await pool.connect();
     try {
-        await client.query("BEGIN"); // Inicia una transacción
+        await client.query("BEGIN");
 
-         // 1️⃣ Obtener el ID del barber_specialty para eliminar la foto
-         const { rows } = await client.query(
-            `SELECT id FROM barber_specialties WHERE specialty_id = $1`,
-            [id]
-         );
-         const barberSpecialtyId = rows[0]?.id; // Obtiene el ID del barber_specialty
+        // Buscar la relación con el barbero
+        const { rows } = await client.query(`SELECT id FROM barber_specialties WHERE specialty_id = $1`, [id]);
+        const barberSpecialtyId = rows[0]?.id;
 
-         if (barberSpecialtyId){
-            // 2️⃣ Eliminar la foto de barber_specialty_photos
-            await client.query(
-                `DELETE FROM barber_specialty_photos WHERE barber_specialty_id = $1`,
-                [barberSpecialtyId]
-            );
+        // Si existe la relación, eliminar foto y la relación
+        if (barberSpecialtyId) {
+            await client.query(`DELETE FROM barber_specialty_photos WHERE barber_specialty_id = $1`, [barberSpecialtyId]);
+            await client.query(`DELETE FROM barber_specialties WHERE id = $1`, [barberSpecialtyId]);
+        }
 
-            // 3️⃣ Eliminar la especialidad de barber_specialties
-            await client.query(
-                `DELETE FROM barber_specialties WHERE id = $1`,
-                [barberSpecialtyId]
-            );
-         }
+        // Eliminar la especialidad en sí
+        const result = await client.query(`DELETE FROM specialties WHERE id = $1 RETURNING *`, [id]);
 
-        // 4️⃣ Finalmente eliminar de specialties
-        const result = await client.query(
-            `DELETE FROM specialties WHERE id = $1 RETURNING *`,
-            [id]
-        );
-        await client.query("COMMIT"); // Confirma la transacción
-        return result.rows.length > 0; // Retorna true si se eliminó correctamente, false si no se encontró
+        await client.query("COMMIT"); // Confirmar eliminación
+        return result.rows.length > 0; // Devuelve true si se eliminó correctamente
     } catch (error) {
-        await client.query("ROLLBACK"); // Revierte la transacción en caso de error
-        throw error; // Lanza el error para manejarlo en otro lugar
-
-    }finally{
-        client.release(); // Libera el cliente de la conexión
+        await client.query("ROLLBACK"); // Revertir si hubo error
+        throw error;
+    } finally {
+        client.release(); // Liberar conexión
     }
 };
 
-module.exports ={
+// ==========================
+// Exportar las funciones para usarlas en otros archivos
+// ==========================
+module.exports = {
     createAndAssignSpecialty,
-    deleteSpecialty,
     getBarberSpecialties,
-    updateSpecialty
+    updateSpecialty,
+    deleteSpecialty
 };

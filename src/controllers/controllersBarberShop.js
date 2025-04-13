@@ -32,7 +32,7 @@ const createBarberShop = async (req, res) => {
         // 3️⃣ Verificar si el usuario ya tiene una barbería registrada
         const hasBarberShop = await BarberShopModels.hasBarberShop(user_id);
         if (hasBarberShop) {
-            return res.status(400).json({ message: "El usuario ya tiene una barbería registrada" });
+            return res.status(400).json({ message: "El usuario ya tiene una barbería registrada.." });
         }
 
         // 4️⃣ Llamamos al modelo para crear la barbería

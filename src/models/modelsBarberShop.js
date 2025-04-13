@@ -8,12 +8,14 @@ const BarberShopModels = {
      * @returns {boolean} - true si el usuario tiene el rol adecuado, false en caso contrario
      */
     async hasProperRole(user_id) {
-        const query = `SELECT role FROM users WHERE id = $1;`;
-        const result = await pool.query(query, [user_id]);
-
-        // Si el usuario existe, devolvemos el rol; si no, devolvemos null
-        return result.rows.length > 0 ? result.rows[0].role : null;
+        const query = `SELECT role FROM users WHERE id = $1;`;// Consulta para obtener el rol del usuario
+        const result = await pool.query(query, [user_id]);// Ejecutar la consulta
+        
+        
+        // Si el rol es "barber", devolvemos true; si no, devolvemos false
+         return result.rows.length > 0 ? result.rows[0].role : null;
     },
+
 
     /**
      * Verifica si el usuario ya tiene una barbería registrada.
@@ -21,28 +23,19 @@ const BarberShopModels = {
      * @returns {boolean} - true si ya tiene una barbería registrada, false en caso contrario
      */
     async hasBarberShop(user_id) {
-        const query = `SELECT 1 FROM barbers WHERE user_id = $1 LIMIT 1;`;
-        const result = await pool.query(query, [user_id]);
-        return result.rows.length > 0;
+        const query = `SELECT 1 FROM barbers WHERE user_id = $1 LIMIT 1;`;// Consulta para verificar si el usuario ya tiene una barbería registrada
+        const result = await pool.query(query, [user_id]);// Ejecutar la consulta
+        return result.rows.length > 0;// Si hay filas, significa que el usuario ya tiene una barbería registrada
     },
+
 
     /**
      * Crea una nueva barbería y la asocia a un usuario en la base de datos.
      */
     async createBarberShop(name, direccion, photo_url, city, locality, user_id) {
-        const client = await pool.connect();
+        const client = await pool.connect();// Obtener un cliente de la conexión a la base de datos
         try {
-            await client.query("BEGIN");
-
-            // Verificar si el usuario tiene el rol adecuado
-            if (!(await this.hasProperRole(user_id))) {
-                throw new Error("El usuario no tiene el rol adecuado para registrar una barbería.");
-            }
-
-            // Verificar si el usuario ya tiene una barbería registrada
-            if (await this.hasBarberShop(user_id)) {
-                throw new Error("El usuario ya tiene una barbería registrada.");
-            }
+            await client.query("BEGIN"); // Iniciar transacción
 
             let query = `SELECT id FROM locations WHERE city = $1 AND locality = $2`;
             let result = await client.query(query, [city, locality]);
@@ -72,6 +65,8 @@ const BarberShopModels = {
             client.release();
         }
     },
+
+     
     /**
      * Obtiene todas las barberías registradas en la base de datos junto con su ciudad y localidad.
      * 
