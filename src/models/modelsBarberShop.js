@@ -28,6 +28,17 @@ const BarberShopModels = {
         return result.rows.length > 0;// Si hay filas, significa que el usuario ya tiene una barbería registrada
     },
 
+    /**
+    * Verifica si ya existe una barbería con un nombre específico.
+    * @param {string} name - Nombre de la barbería
+    * @returns {boolean} - true si existe, false si no
+    */ 
+     async hasBarberShopByName(name) {
+        const query = `SELECT 1 FROM barber_shops WHERE name = $1 LIMIT 1;`;// Consulta para verificar si ya existe una barbería con el nombre especifico
+        const result = await pool.query(query, [name]);// Ejecutar la consulta
+        return result.rows.length > 0;// Si hay filas, significa que ya existe una barbería con ese nombre
+     },
+
 
     /**
      * Crea una nueva barbería y la asocia a un usuario en la base de datos.

@@ -6,11 +6,6 @@ const  BarberShopModels = require("../models/modelsBarberShop");//Importamos  el
  * @param {Object} res - Objeto de respuesta.
  */
  
-/**
- * Crea una nueva barbería y la guarda en la base de datos.
- * @param {Object} req - Objeto de solicitud con los datos de la barbería.
- * @param {Object} res - Objeto de respuesta.
- */
 const createBarberShop = async (req, res) => {
     try {
         // Extraemos los datos enviados en la solicitud
@@ -19,6 +14,12 @@ const createBarberShop = async (req, res) => {
         // 1️⃣ Validar que todos los campos requeridos están presentes
         if (!name || !direccion || !photo_url || !city || !locality || !user_id) {
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        // 3️⃣.1 Verificar si ya existe una barbería con ese nombre 
+        const existingBarberShop = await BarberShopModels.hasBarberShopByName(name);
+        if (existingBarberShop) {
+            return res.status(400).json({menssage: "Ese nombre de barbería ya existe. Por favor elige un nombre diferente."});
         }
 
         // 2️⃣ Verificar si el usuario tiene el rol adecuado

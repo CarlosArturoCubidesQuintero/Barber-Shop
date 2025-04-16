@@ -8,15 +8,21 @@ const BarberScheduleModel = {
    * @returns {Object} - Horario creado
    */
   async createSchedule(scheduleData) {
-    const {barber_id, day_of_week, start_time, end_time, is_available} = scheduleData;// Desestructuramos los datos del horario
+    const {barber_id, day_of_week, start_time, end_time, schedule_type} = scheduleData;// Desestructuramos los datos del horario
+
+    // 🧠 Consulta SQL para insertar el nuevo horario
     const query = `
-    INSERT INTO barber_schedules (barber_id, day_of_week, start_time, end_time, is_available)
+    INSERT INTO barber_schedules (barber_id, day_of_week, start_time, end_time, schedule_type)
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING *;// Consulta SQL para insertar un nuevo horario
+    RETURNING *;
     `;
-    const values = [barber_id, day_of_week, start_time, end_time, is_available];// Valores a insertar
+    const values = [barber_id, day_of_week, start_time, end_time, schedule_type];// Valores a insertar
+    
+    // ⚙️ Ejecutar la consulta
     const result = await pool.query(query, values);// Ejecutar la consulta
-    return result.rows[0];// Devolver el horario creado
+
+    // ✅ Devolver el horario creado
+    return result.rows[0];
   },
 
   /**
@@ -26,7 +32,7 @@ const BarberScheduleModel = {
    */
   async getSchedulesByBarberId(barber_id){
     const query = `
-    SELECT * FROM barber_schedules WHERE barber_id = $1 ORDER day_of_week;`;
+    SELECT * FROM barber_schedules WHERE barber_id = $1 ORDER BY day_of_week, start_time;`;
     const result = await pool.query(query, [barber_id]);// Ejecutar la consulta
     return result.rows;// Devolver la lista de horarios
   },
@@ -42,7 +48,7 @@ const BarberScheduleModel = {
     FROM barber_schedules bs
     JOIN barbers b ON bs.barber_id = b.id
     JOIN users u ON b.user_id = u.id
-    ORDER BY u.name bs.day_of_week;
+    ORDER BY u.name, bs.day_of_week;
     `;
     const result = await pool.query(query);// Ejecutar la consulta = Devolver la lista de horarios con nombre del barbero
     return result.rows; // Devolver la lista de horarios con nombre del barbero

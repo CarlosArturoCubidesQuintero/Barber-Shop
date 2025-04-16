@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/middlewareToken');// Importa el mi
 //Rutas para crear, obtener, editar y eliminar horarios de barberos
 router.post('/createSchedule', createSchedule);// Ruta para crear un horario
 router.get('/getAllSchedules', getAllSchedules);// Ruta para obtener todos los horarios
-router.get('/getSchedulesById/:id', getSchedulesByBarberId);// Ruta para obtener horarios por ID de barbero
+router.get('/getSchedulesBy/:id', getSchedulesByBarberId);// Ruta para obtener horarios por ID de barbero
 router.put('/updateSchedule/:id', updateSchedule);// Ruta para actualizar un horario
 router.delete('/deleteSchedule/:id', deleteSchedule);// Ruta para eliminar un horario
 
