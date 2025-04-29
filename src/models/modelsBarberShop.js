@@ -59,12 +59,29 @@ const BarberShopModels = {
 
             // Inserta la barbería
             const insertBarberShopQuery = `
-            INSERT INTO barber_shops (name, direccion, photo_url, location_id, admin_id)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO barber_shops (name, direccion,  location_id, admin_id)
+            VALUES ($1, $2, $3, $4)
             RETURNING id
         `;
-            const result = await client.query(insertBarberShopQuery, [normalizedName, direccion, photo_url, location_id, user_id]);
+            const result = await client.query(insertBarberShopQuery, [normalizedName, direccion, location_id, user_id]);
             const barberShopId = result.rows[0].id; // ID de la barbería creada
+
+            //Insertar la foto de la barbería
+            const insertPhotoQuery = `
+            INSERT INTO barber_photos (barber_shop_id, photo_url)
+            VALUES ($1, $2)
+            RETURNING id
+            `;
+            const photoRes = await client.query(insertPhotoQuery, [barberShopId, photo_url]);
+            const photoId = photoRes.rows[0].id; // ID de la foto de la barbería creada
+
+            //  Actualizar barber_shops con el main_photo_id
+            const updateMainPhotoQuery = `
+            UPDATE barber_shops
+            SET main_photo_id = $1
+            WHERE id = $2
+            `;
+            await client.query(updateMainPhotoQuery, [photoId, barberShopId]);
 
             // Inserta al administrador como barbero
             const insertBarberQuery = `
@@ -81,6 +98,7 @@ const BarberShopModels = {
                 direccion,
                 photo_url,
                 location_id,
+                main_photo_id: photoId,
             };
         } catch (error) {
             await client.query("ROLLBACK"); // Revierte la transacción si ocurre error
@@ -91,35 +109,43 @@ const BarberShopModels = {
     },
 
     /**
-     * Obtiene todas las barberías junto con su ciudad y localidad.
-     * @returns {Promise<Array>} - Lista de barberías.
+     * Obtiene todas las barberías junto con su ciudad y localidad. junto con los barberos asociados.
+     * @returns {Promise<Array>} - Lista de barberías cons sus barberos.
      */
     async getAllBarberShop() {
         const query = `
-            SELECT bs.*, l.city, l.locality
+            SELECT 
+                bs.*, 
+                l.city, 
+                l.locality,
+    
+                -- Foto principal
+                jsonb_build_object(
+                    'id', bp.id,
+                    'photo_url', bp.photo_url
+                ) AS main_photo,
+    
+                -- Barberos como JSON
+                COALESCE(json_agg(
+                    DISTINCT jsonb_build_object(
+                        'id', b.id,
+                        'user_id', b.user_id
+                    )
+                ) FILTER (WHERE b.id IS NOT NULL), '[]') AS barbers
+    
             FROM barber_shops bs
-            JOIN locations l ON bs.location_id = l.id`;
+            JOIN locations l ON bs.location_id = l.id
+            LEFT JOIN barbers b ON bs.id = b.barber_shop_id
+            LEFT JOIN barber_photos bp ON bs.main_photo_id = bp.id
+    
+            GROUP BY bs.id, l.city, l.locality, bp.id
+        `;
+
         const result = await pool.query(query);
         return result.rows;
     },
 
-    /**
-     * Obtiene una barbería por su ID, incluyendo ubicación y barberos asociados.
-     * @param {number} id - ID de la barbería.
-     * @returns {Promise<object|null>} - Barbería encontrada o null.
-     */
-    async getBarberShopById(id) {
-        const query = `
-            SELECT bs.*, l.city, l.locality,
-                   json_agg(json_build_object('id', b.id, 'user_id', b.user_id)) AS barbers
-            FROM barber_shops bs
-            JOIN locations l ON bs.location_id = l.id
-            LEFT JOIN barbers b ON bs.id = b.barber_shop_id
-            WHERE bs.id = $1
-            GROUP BY bs.id, l.city, l.locality`;
-        const result = await pool.query(query, [id]);
-        return result.rows[0] || null;
-    },
+
 
     /**
      * Asigna un barbero a una barbería.

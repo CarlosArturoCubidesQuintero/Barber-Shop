@@ -101,21 +101,6 @@ const getAllBarberShop = async (req, res) => {
     }
 };
 
-/**
- * Obtiene los detalles de una barbería por su ID.
- */
-const getBarberShopById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const barberShop = await BarberShopModels.getBarberShopById(id);
-        if (!barberShop) {
-            return res.status(404).json({ message: "Barbería no encontrada" });
-        }
-        res.status(200).json(barberShop);
-    } catch (error) {
-        res.status(500).json({ message: "Error al obtener la barbería", error: error.message });
-    }
-};
 
 /**
  * Actualiza la información de una barbería por su ID. Solo el administrador que la creó puede hacerlo.
@@ -189,7 +174,6 @@ module.exports = {
     createBarberShop,
     assignBarberToShop,
     getAllBarberShop,
-    getBarberShopById,
     updateBarberByIdShop,
     deleteBarberShopById
 };

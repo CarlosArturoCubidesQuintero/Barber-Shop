@@ -3,7 +3,6 @@ const router = express.Router();
 const {
     createBarberShop,
     getAllBarberShop,
-    getBarberShopById,
     updateBarberByIdShop,
     deleteBarberShopById,
     assignBarberToShop } = require("../controllers/controllersBarberShop");
@@ -16,8 +15,6 @@ router.post("/createBarberShop", authMiddleware, createBarberShop);//OK
 //Ruta para obtener todas las barberías
 router.get("/getAllBarberShops", getAllBarberShop);//ok
 
-//Ruta para obtener una barbería por su id 
-router.get("/getBarberByid/:id", getBarberShopById);//ok
 
 //Ruta para actualizar la información de una barbería
 router.put("/updateBarberShop/:id", authMiddleware, updateBarberByIdShop);//ok
