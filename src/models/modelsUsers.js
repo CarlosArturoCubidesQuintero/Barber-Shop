@@ -1,7 +1,7 @@
 const pool = require("../config/postgreSqlConfig");
 
 class User {
-  
+
   // ✅ Método para buscar usuario por ID
   static async findUserById(id) {
     try {

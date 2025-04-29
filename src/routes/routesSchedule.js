@@ -12,4 +12,4 @@ router.put('/updateSchedule/:id', updateSchedule);// Ruta para actualizar un hor
 router.delete('/deleteSchedule/:id', deleteSchedule);// Ruta para eliminar un horario
 
 
-module.exports = router;// Exporta el router
+module.exports = router;// Exporta el router 
