@@ -146,6 +146,26 @@ const BarberShopModels = {
     },
 
 
+    /**
+     * Nos devuelve los barberos que aún no tienen perfil en la tabla barbers
+     */
+    async getBarbersWithoutProfile() {
+        try {
+            const query = `
+             SELECT u.id, u.name, u.email
+             FROM users u
+             LEFT JOIN barbers b ON u.id = b.user_id
+             WHERE u.role = 'barber' AND b.id IS NULL;
+             `;
+            const result = await pool.query(query);
+            return result.rows; // Devuelve los barberos sin perfil
+        } catch (error) {
+            console.error('Error en getBarbersWithoutProfile:', error);
+            throw error; // Lanza el error para que lo maneje el controlador
+        }
+    },
+
+
 
     /**
      * Asigna un barbero a una barbería.
@@ -253,10 +273,6 @@ const BarberShopModels = {
                 result = fetch.rows[0]; // Guarda la barbería sin cambios
             }
 
-
-
-
-
             await client.query('COMMIT');//Confirmamos la transacción
             return result;
 
@@ -268,6 +284,58 @@ const BarberShopModels = {
             client.release();//Liberamos la conexión del pool
         }
     },
+
+
+    /*
+    *Insertar la foto actualizada por la que ya existe en la base de datos
+    */
+    async insertBarberPhoto(barber_shop_id, photo_url) {
+        const query = `
+            INSERT INTO barber_photos (barber_shop_id, photo_url)
+            VALUES ($1, $2)
+            RETURNING id
+        `;
+        const result = await pool.query(query, [barber_shop_id, photo_url]);
+        return result.rows[0].id;
+    },
+
+    /**
+     * Método para actualizar la URL de laimagen de la BD 
+     */
+    async updatePhotoUrlById(id, photo_url) {
+        const query = `
+            UPDATE barber_photos
+            SET photo_url = $1
+            WHERE id = $2
+        `;
+        await pool.query(query, [photo_url, id]);
+    },
+
+
+    /**
+     * Obtener los datos actuales de la barbería por ID.
+     */
+    async getBarberShopById(id) {
+        const query = await pool.query(`
+            SELECT * FROM barber_shops WHERE id = $1`,
+            [id]
+        );
+        return query.rows[0]; // ✅ Esto sí está correcto
+    },
+
+
+    /*
+     *Nos de vuelve la foto encontrada por id 
+    */
+    async getPhotoById(photo_id) {
+        const query = `
+            SELECT * FROM barber_photos
+            WHERE id = $1
+        `;
+        const result = await pool.query(query, [photo_id]);
+        return result.rows[0]; // Devuelve la foto encontrada
+    },
+
 
 
     /**

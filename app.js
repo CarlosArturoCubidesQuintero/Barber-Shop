@@ -7,6 +7,7 @@ const fs = require('fs');
 // Requiere el módulo path para manejar y resolver rutas de archivos y directorios.
 const path = require('path');
 
+
 // Requiere el módulo body-parser para analizar el cuerpo de las solicitudes HTTP.
 const bodyParser = require('body-parser');
 
@@ -15,6 +16,10 @@ require('dotenv').config();
 
 // Crea una instancia de la aplicación Express.
 const app = express();
+
+//Permite servir archivos estáticos desde la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Requiere el módulo 'morgan', que permite registrar en la consola las peticiones HTTP recibidas.
 const morgan = require('morgan');
@@ -58,7 +63,7 @@ fs.readdirSync(routesPath).forEach((file) => {
     if (file.endsWith('.js')) { // Verifica que el archivo tenga extensión .js.
         try {
             const route = require(path.join(routesPath, file)); // Importa la ruta.
-            app.use('/api',route); // Usa la ruta importada con el prefijo '/api'.
+            app.use('/api', route); // Usa la ruta importada con el prefijo '/api'.
             console.log(`✔ Ruta cargada: ${file}`); // Muestra en consola qué ruta fue cargada.
         } catch (error) {
             console.error(`❌ Error al cargar la ruta ${file}:`, error); // Muestra errores en caso de fallo.
